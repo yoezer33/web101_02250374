@@ -1,0 +1,127 @@
+.container {
+  min-height: 100vh;
+  background: #0d1117;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #e6edf3;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: #8b949e;
+  margin-bottom: 2rem;
+}
+
+.form {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dropzone {
+  border: 2px dashed #30363d;
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  color: #8b949e;
+  transition: border-color 0.2s, background 0.2s;
+  background: #161b22;
+}
+
+.dropzone:hover {
+  border-color: #58a6ff;
+  background: #1c2128;
+}
+
+.dropzone.active {
+  border-color: #58a6ff;
+  background: #1c2128;
+  color: #58a6ff;
+}
+
+.dropzone.hasFile {
+  border-color: #3fb950;
+  color: #3fb950;
+}
+
+.or {
+  font-size: 0.8rem;
+  margin: 0.5rem 0;
+  color: #6e7681;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: #6e7681;
+  margin-top: 0.5rem;
+}
+
+.progressWrapper {
+  position: relative;
+  background: #21262d;
+  border-radius: 20px;
+  height: 24px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: #58a6ff;
+  border-radius: 20px;
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: #e6edf3;
+  font-weight: 600;
+}
+
+.status {
+  font-size: 0.875rem;
+  color: #8b949e;
+  text-align: center;
+  padding: 0.75rem;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+}
+
+.uploadBtn {
+  background: #238636;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-family: inherit;
+}
+
+.uploadBtn:hover {
+  background: #2ea043;
+  transform: translateY(-1px);
+}
+
+.uploadBtn:active {
+  transform: translateY(0);
+}
