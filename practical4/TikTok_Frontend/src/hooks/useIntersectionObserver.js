@@ -1,45 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
-/**
- * Hook to observe when an element enters the viewport
- * @param {Object} options - IntersectionObserver options
- * @param {boolean} freezeOnceVisible - Whether to stop observing once visible
- * @returns {[React.RefObject, boolean]} - Reference and isIntersecting flag
- */
-export default function useIntersectionObserver({
-  root = null,
-  rootMargin = '0px',
-  threshold = 0.1,
-  freezeOnceVisible = false,
-} = {}) {
-  const [ref, setRef] = useState(null);
-  const [isIntersecting, setIsIntersecting] = useState(false);
+export default function useIntersectionObserver(callback, options = {}) {
+  const ref = useRef(null);
 
   useEffect(() => {
-    if (!ref) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        callback();
+      }
+    }, {
+      threshold: 0.1,
+      ...options,
+    });
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Update state when observer callback is invoked
-        setIsIntersecting(entry.isIntersecting);
-
-        // If element should freeze once visible and is now visible,
-        // disconnect the observer
-        if (entry.isIntersecting && freezeOnceVisible) {
-          observer.disconnect();
-        }
-      },
-      { root, rootMargin, threshold }
-    );
-
-    observer.observe(ref);
+    const currentRef = ref.current;
+    if (currentRef) observer.observe(currentRef);
 
     return () => {
-      if (ref) {
-        observer.unobserve(ref);
-      }
+      if (currentRef) observer.unobserve(currentRef);
     };
-  }, [ref, root, rootMargin, threshold, freezeOnceVisible]);
+  }, [callback, options]);
 
-  return [setRef, isIntersecting];
+  return ref;
 }

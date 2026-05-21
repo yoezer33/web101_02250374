@@ -55,7 +55,7 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('name', data.name || file.name);
-      const response = await axios.post('/api/upload', formData, {
+      const response = await axios.post('http://localhost:8000/api/upload', formData, {
         onUploadProgress: (progressEvent) => {
           const percentage = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
           setUploadProgress(percentage);

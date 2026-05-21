@@ -1,14 +1,18 @@
 import './globals.css';
-import MainLayout from '../components/layout/MainLayout';
-import Providers from '../components/Providers';
+import QueryProvider from '../providers/QueryProvider';
+
+export const metadata = {
+  title: 'TikTok Clone',
+  description: 'TikTok clone with infinite scroll',
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Providers>
-          <MainLayout>{children}</MainLayout>
-        </Providers>
+         <QueryProvider>
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

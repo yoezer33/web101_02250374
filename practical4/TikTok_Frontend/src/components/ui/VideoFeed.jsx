@@ -1,132 +1,96 @@
-"use client";
+'use client';
 
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import VideoCard from './VideoCard';
-import { getVideos, getFollowingVideos } from '../../services/videoService';
-import toast from 'react-hot-toast';
-import useIntersectionObserver from '../../hooks/useIntersectionObserver';
-import { useAuth } from '../../contexts/authContext';
+import { useCallback } from 'react';
+import { fetchVideos } from '@/services/videoService';
+import useIntersectionObserver from '@/hooks/useIntersectionObserver';
 
-
-const VideoFeed = ({ feedType = 'forYou' }) => {
-  const { isAuthenticated } = useAuth();
-  const [loadMoreRef, isLoadMoreVisible] = useIntersectionObserver();
-
-  // Query key includes the feed type to cache separately
-  const queryKey = ['videos', feedType];
-  
-  // Select the appropriate fetch function based on feed type
-  const fetchFn = feedType === 'following' ? getFollowingVideos : getVideos;
-  
-  // Set up infinite query
+export default function VideoFeed() {
   const {
     data,
-    error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    status,
+    isLoading,
+    isError,
   } = useInfiniteQuery({
-    queryKey,
-    queryFn: ({ pageParam }) => fetchFn({ cursor: pageParam }),
-    initialPageParam: null, // Start with no cursor
-    getNextPageParam: (lastPage) => lastPage.pagination.nextCursor,
-    enabled: feedType !== 'following' || isAuthenticated, // Don't fetch following feed if not authenticated
+    queryKey: ['videos'],
+    queryFn: fetchVideos,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    initialPageParam: undefined,
   });
 
-  // Load more when the load more element becomes visible
-  useEffect(() => {
-    if (isLoadMoreVisible && hasNextPage && !isFetchingNextPage) {
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  }, [isLoadMoreVisible, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Handle errors with toast
-  useEffect(() => {
-    if (error) {
-      toast.error('Failed to load videos. Please try again.');
-      console.error('Error loading videos:', error);
-    }
-  }, [error]);
+  const sentinelRef = useIntersectionObserver(handleLoadMore);
 
-  // Show loading state
-  if (status === 'pending' && !data) {
-    return (
-      <div className="flex justify-center py-10">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-      </div>
-    );
-  }
+  if (isLoading) return (
+    <div className="flex justify-center items-center h-screen">
+      <p className="text-white text-xl">Loading videos...</p>
+    </div>
+  );
 
-  // Show error state
-  if (status === 'error' && !data) {
-    return (
-      <div className="text-center py-10">
-        <p className="text-red-500">Failed to load videos</p>
-        <button
-          onClick={() => fetchNextPage({ cancelRefetch: true })}
-          className="mt-4 rounded-lg bg-blue-500 px-4 py-2 text-white"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
+  if (isError) return (
+    <div className="flex justify-center items-center h-screen">
+      <p className="text-red-500 text-xl">Failed to load videos.</p>
+    </div>
+  );
 
-  // Show empty state for following feed
-  if (feedType === 'following' && data?.pages[0]?.videos.length === 0) {
-    return (
-      <div className="text-center py-10">
-        <p className="text-gray-500">
-          You're not following anyone yet or the users you follow haven't posted any videos.
-        </p>
-      </div>
-    );
-  }
-
-  // Flatten all pages of videos
-  const videos = data?.pages.flatMap((page) => page.videos) || [];
-
-  if (videos.length === 0) {
-    return (
-      <div className="text-center py-10">
-        <p className="text-gray-500">No videos found.</p>
-      </div>
-    );
-  }
+  const videos = data?.pages.flatMap(page => page.videos) ?? [];
 
   return (
-    <div className="space-y-10">
-      {/* Render all videos */}
-      {videos.map((video, index) => (
-  <VideoCard key={`${video.id}-${index}`} video={video} />
-))}
-      
-      {/* Loading indicator for next page */}
+    <div className="flex flex-col items-center bg-black min-h-screen py-4">
+      {videos.length === 0 && (
+        <p className="text-white mt-10">No videos found.</p>
+      )}
+
+      {videos.map((video) => (
+        <div
+          key={video.id}
+          className="w-full max-w-md bg-gray-900 rounded-xl mb-6 overflow-hidden shadow-lg"
+        >
+          <video
+            src={video.url}
+            controls
+            className="w-full h-96 object-cover"
+          />
+          <div className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              {video.user?.avatar && (
+                <img
+                  src={video.user.avatar}
+                  alt={video.user.username}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              )}
+              <span className="text-white font-semibold">
+                @{video.user?.username}
+              </span>
+            </div>
+            <p className="text-gray-300 text-sm">{video.title}</p>
+            {video.description && (
+              <p className="text-gray-500 text-xs mt-1">{video.description}</p>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* Sentinel — triggers next page load */}
+      <div ref={sentinelRef} className="h-10 w-full" />
+
       {isFetchingNextPage && (
-        <div className="flex justify-center py-5">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-        </div>
+        <p className="text-white text-sm mb-4">Loading more videos...</p>
       )}
-      
-      {/* Load more trigger element */}
-      {hasNextPage && !isFetchingNextPage && (
-        <div ref={loadMoreRef} className="h-20" />
-      )}
-      
-      {/* End of feed message */}
+
       {!hasNextPage && videos.length > 0 && (
-        <div className="text-center py-5 text-gray-500">
-          You've reached the end of the feed.
-        </div>
+        <p className="text-gray-500 text-sm mb-4">You've reached the end!</p>
       )}
     </div>
   );
-};
-
-export default VideoFeed;
-
-
+}
 
 

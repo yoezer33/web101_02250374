@@ -194,28 +194,37 @@ exports.getUserVideos = async (req, res) => {
 // Get videos for following feed
 exports.getFollowingVideos = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { cursor, limit = 10 } = req.query;
-    const limitNum = parseInt(limit) || 10;
- 
+    const limit = parseInt(req.query.limit) || 10;
+    const cursor = req.query.cursor
+      ? parseInt(req.query.cursor)
+      : null;
+
+    // Find all users that the logged-in user follows
     const following = await prisma.follow.findMany({
-      where: { followerId: userId },
+      where: { followerId: req.user.id },
       select: { followingId: true },
     });
- 
-    const followingIds = following.map((follow) => follow.followingId);
- 
+
+    const followingIds = following.map((f) => f.followingId);
+
+    // Return empty response if user follows nobody
     if (followingIds.length === 0) {
       return res.status(200).json({
         videos: [],
-        pagination: { nextCursor: null, hasNextPage: false },
+        pagination: {
+          nextCursor: null,
+          hasNextPage: false,
+        },
       });
     }
- 
+
     const queryOptions = {
-      where: { userId: { in: followingIds } },
-      take: limitNum + 1,
-      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+      where: {
+        userId: { in: followingIds },
+      },
+      orderBy: { createdAt: "desc" },
+
       include: {
         user: {
           select: {
@@ -225,43 +234,48 @@ exports.getFollowingVideos = async (req, res) => {
             avatar: true,
           },
         },
+
+        likes: true,
+
         _count: {
           select: {
-            likes: true,
             comments: true,
           },
         },
       },
     };
- 
+
+    // Add cursor pagination if cursor exists
     if (cursor) {
-      queryOptions.cursor = { id: parseInt(cursor) };
+      queryOptions.cursor = { id: cursor };
       queryOptions.skip = 1;
     }
- 
+
     const videos = await prisma.video.findMany(queryOptions);
- 
-    const hasNextPage = videos.length > limitNum;
-    if (hasNextPage) videos.pop();
- 
-    const formattedVideos = videos.map((video) => ({
-      ...video,
-      likeCount: video._count.likes,
-      commentCount: video._count.comments,
-      _count: undefined,
-    }));
- 
+
+    const hasNextPage = videos.length > limit;
+
+    if (hasNextPage) {
+      videos.pop();
+    }
+
     const nextCursor = hasNextPage
-      ? formattedVideos[formattedVideos.length - 1].id.toString()
+      ? videos[videos.length - 1].id
       : null;
- 
+
     res.status(200).json({
-      videos: formattedVideos,
-      pagination: { nextCursor, hasNextPage },
+      videos,
+      pagination: {
+        nextCursor,
+        hasNextPage,
+      },
     });
   } catch (error) {
-    console.error('Error getting following videos:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Get following videos error:", error);
+
+    res.status(500).json({
+      error: "Failed to fetch following videos",
+    });
   }
 };
  
